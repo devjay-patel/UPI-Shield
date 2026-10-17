@@ -21,7 +21,9 @@ export default function ScreenChecklist({ language }) {
   // In-memory tick box state only (never persisted to localStorage/cookies)
   const [checkedItems, setCheckedItems] = useState({});
 
-  const checklistItems = [
+  const icons = [ArrowRight, QrCode, Link, Gift, Headphones];
+
+  const checklistItems = t.checklist?.items || [
     { id: 'item-1', text: 'Receiving money never needs your PIN.' },
     { id: 'item-2', text: 'A collect request means money will LEAVE your account.' },
     { id: 'item-3', text: 'Never share your PIN, OTP, or password. Banks never ask for them on call, chat, or SMS.' },
@@ -33,33 +35,33 @@ export default function ScreenChecklist({ language }) {
     { id: 'item-9', text: 'Call the person on a number you already know if the request is from a "friend" or "relative".' }
   ];
 
-  const commonScams = [
+  const rawScams = t.checklist?.scams || [
     {
       title: 'Fake Collect Request',
-      icon: ArrowRight,
       summary: 'Scammer sends a collect/request money notification disguised as cashback. Approving transfers money OUT.'
     },
     {
       title: 'QR Refund Scam',
-      icon: QrCode,
       summary: 'Victim is told to scan a QR code and enter their PIN to "receive" an e-commerce refund or prize.'
     },
     {
       title: 'Fake KYC Update Link',
-      icon: Link,
       summary: 'SMS threatens immediate bank account freeze unless you click a link and make a ₹1 or ₹10 verification payment.'
     },
     {
       title: 'Prize / Lottery Fee Trick',
-      icon: Gift,
       summary: 'Bogus notification says you won ₹25,000, but demands an upfront "processing tax or fee" first.'
     },
     {
       title: 'Fake Customer Care / AnyDesk',
-      icon: Headphones,
       summary: 'Fraudster poses as bank support on Google search, instructing you to install remote screen sharing software.'
     }
   ];
+
+  const commonScams = rawScams.map((scam, i) => ({
+    ...scam,
+    icon: icons[i % icons.length]
+  }));
 
   const toggleCheck = (id) => {
     setCheckedItems(prev => ({ ...prev, [id]: !prev[id] }));
@@ -76,12 +78,12 @@ export default function ScreenChecklist({ language }) {
             {t.tabs.checklist}
           </h2>
           <span style={{ fontSize: '0.82rem', color: 'var(--accent-blue)', fontWeight: 600 }}>
-            {completedCount} of {checklistItems.length} verified (session memory only)
+            {completedCount} of {checklistItems.length} {t.checklist?.verifiedCount || 'verified (session memory only)'}
           </span>
         </div>
 
         <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: 20 }}>
-          Before sending money or approving any UPI prompt, quickly verify these fundamental golden rules:
+          {t.checklist?.heading || 'Before sending money or approving any UPI prompt, quickly verify these fundamental golden rules:'}
         </p>
 
         {/* Interactive Checklist Items */}
@@ -103,7 +105,7 @@ export default function ScreenChecklist({ language }) {
                   checked={isChecked}
                   onChange={() => toggleCheck(item.id)}
                 />
-                <span style={{ fontSize: '0.9rem', color: isChecked ? '#ffffff' : 'var(--text-muted)', textDecoration: isChecked ? 'none' : 'none' }}>
+                <span style={{ fontSize: '0.9rem', color: isChecked ? '#ffffff' : 'var(--text-muted)' }}>
                   {item.text}
                 </span>
               </label>
@@ -114,7 +116,7 @@ export default function ScreenChecklist({ language }) {
         {/* Common UPI Scams Cards */}
         <div style={{ marginTop: 28 }}>
           <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.1rem', fontWeight: 800, marginBottom: 14 }}>
-            Common UPI Fraud Patterns
+            {t.checklist?.scamsTitle || 'Common UPI Fraud Patterns'}
           </h3>
           <div className="scams-grid">
             {commonScams.map((scam, idx) => {
@@ -139,12 +141,11 @@ export default function ScreenChecklist({ language }) {
           </div>
           <div>
             <div style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: '#93c5fd', fontWeight: 700, letterSpacing: 0.8 }}>
-              Already Lost Money or Tricked?
+              {t.checklist?.helplineTitle || 'Already Lost Money or Tricked?'}
             </div>
             <div className="helpline-dial-number">Dial 1930</div>
             <p style={{ fontSize: '0.92rem', color: '#e2e8f0', marginTop: 4 }}>
-              National Cyber Crime Helpline (Ministry of Home Affairs, Govt. of India). Report immediately at{' '}
-              <strong style={{ color: '#38bdf8' }}>cybercrime.gov.in</strong>. Notify your bank immediately to freeze the transaction before funds leave the UPI switch.
+              {t.checklist?.helplineSub || 'National Cyber Crime Helpline (Ministry of Home Affairs, Govt. of India). Report immediately at cybercrime.gov.in. Notify your bank immediately to freeze the transaction before funds leave the UPI switch.'}
             </p>
           </div>
         </div>

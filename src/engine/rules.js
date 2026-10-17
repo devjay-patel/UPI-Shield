@@ -80,7 +80,18 @@ export const EDUCATIONAL_NEGATION_PHRASES = [
   "never enter",
   "do not enter",
   "don't enter",
-  "not required to enter"
+  "not required to enter",
+  // Hindi Devanagari Negation
+  "पिन कभी शेयर मत करो",
+  "पिन किसी को मत बताओ",
+  "ओटीपी किसी को मत देना",
+  "सावधान रहें",
+  "सतर्क रहें",
+  // Gujarati Negation
+  "પિન ક્યારેય શેર કરશો નહીં",
+  "પિન કોઈને આપશો નહીં",
+  "ઓટીપી કોઈને કહેશો નહીં",
+  "સાવચેત રહો"
 ];
 
 /**
@@ -100,7 +111,13 @@ export const GROUP_A_RULES = {
       /pin\s+enter\s+karo.*(?:refund|cashback|paisa|paise|lene)/i,
       /pin\s+enter\s+karke\s+paisa/i,
       /enter\s+pin.*cashback/i,
-      /enter\s+pin.*refund/i
+      /enter\s+pin.*refund/i,
+      // Hindi Devanagari
+      /पिन\s+(?:डालो|दर्ज\s+करें|एंटर\s+करो).*(?:रिफंड|कैशबैक|पैसे|प्राप्त)/i,
+      /पैसे\s+पाने\s+के\s+लिए\s+पिन/i,
+      // Gujarati
+      /પિન\s+(?:નાખો|દાખલ\s+કરો).*(?:રિફંડ|કેશબેક|પૈસા)/i,
+      /પૈસા\s+મેળવવા\s+પિન/i
     ]
   },
   SECRET_DISCLOSURE: {
@@ -113,7 +130,13 @@ export const GROUP_A_RULES = {
       /(?:enter|put|type)\s+(?:your\s+)?(?:upi\s+)?(?:pin|otp|cvv)\s+here/i,
       /pin\s+(?:daalo|batao|bhejo|bolo)/i,
       /otp\s+(?:batao|bhejo|daalo|share\s+karo)/i,
-      /pin\s+maang\s+raha/i
+      /pin\s+maang\s+raha/i,
+      // Hindi Devanagari
+      /पिन\s+(?:बताओ|भेजो|शेयर\s+करो)/i,
+      /ओटीपी\s+(?:बताओ|भेजो|दर्ज\s+करो|शेयर\s+करो)/i,
+      // Gujarati
+      /પિન\s+(?:આપો|કહો|મોકલો)/i,
+      /ઓટીપી\s+(?:આપો|કહો|શેર\s+કરો)/i
     ]
   },
   REMOTE_ACCESS: {
@@ -215,7 +238,14 @@ export const GROUP_C_RULES = {
     "limited time",
     "now",
     "right now",
-    "pay now"
+    "pay now",
+    // Vernacular urgency
+    "तुरंत",
+    "अभी",
+    "जल्दी",
+    "તાત્કાલિક",
+    "હમણાં",
+    "જલ્દી"
   ],
   THREAT_WORDS: [
     "account blocked",
@@ -230,7 +260,15 @@ export const GROUP_C_RULES = {
     "penalty",
     "account band ho jayega",
     "police case",
-    "court notice"
+    "court notice",
+    // Vernacular threats
+    "खाता बंद",
+    "खाता ब्लॉक",
+    "पुलिस केस",
+    "सिम ब्लॉक",
+    "વીજળી કાપ",
+    "ખાતું બ્લોક",
+    "ખાતું બંધ"
   ]
 };
 
@@ -349,6 +387,12 @@ export const GROUP_F_RULES = {
     id: "F_UNKNOWN_COLLECT",
     label: "Collect request initiated by unknown contact",
     explanation: "Collect requests directly debit your bank account. Accepting one from an unknown sender is dangerous."
+  },
+  INVALID_VPA_FORMAT: {
+    points: 15,
+    id: "F_INVALID_VPA_FORMAT",
+    label: "Invalid or malformed UPI ID (VPA) format",
+    explanation: "Standard UPI addresses follow the 'username@bank' structure without spaces or illegal symbols. A malformed handle indicates a fake or deceptive payment request."
   }
 };
 

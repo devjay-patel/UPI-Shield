@@ -683,6 +683,40 @@ body::before {
   color: #ef4444;
 }
 
+.demo-matrix-table-container {
+  overflow-x: auto;
+  margin-top: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+}
+
+.demo-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.demo-matrix-table th {
+  background: rgba(15, 23, 42, 0.9);
+  padding: 10px 12px;
+  color: var(--accent-blue);
+  font-weight: 700;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.demo-matrix-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
+}
+
+.demo-matrix-table tr:hover {
+  background: rgba(56, 189, 248, 0.04);
+}
+
 /* ==========================================================================
    SCREEN B - RESULT PANEL
    ========================================================================== */
@@ -944,8 +978,136 @@ body::before {
    SCREEN C - PAUSE DEMO & OVERLAY
    ========================================================================== */
 .phone-mockup-wrapper {
-  max-width: 440px;
+  max-width: 520px;
   margin: 0 auto;
+}
+
+.scenario-switcher-box {
+  margin-bottom: 20px;
+  background: rgba(10, 15, 28, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.scenario-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.scenario-pill-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+
+.scenario-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: var(--border-medium);
+}
+
+.scenario-pill-btn.active {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: var(--accent-blue);
+  color: #38bdf8;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+}
+
+.upi-shield-gate-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  color: #93c5fd;
+  margin-bottom: 12px;
+}
+
+.dummy-pin-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid var(--accent-blue);
+  background: transparent;
+  display: inline-block;
+  transition: all var(--transition-fast);
+}
+
+.dummy-pin-dot.filled {
+  background: var(--accent-blue);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+
+.simulated-pin-screen {
+  animation: overlayFadeIn 0.2s ease-out;
+  padding: 8px 0;
+}
+
+.sim-keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 260px;
+  margin: 14px auto 0 auto;
+}
+
+.sim-keypad-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.sim-keypad-btn:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.4);
+  transform: translateY(-1px);
+}
+
+.sim-keypad-btn:active {
+  transform: scale(0.96);
+  background: rgba(56, 189, 248, 0.25);
+}
+
+.sim-keypad-btn.check-btn {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.sim-keypad-btn.check-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sim-keypad-btn.check-btn:not(:disabled):hover {
+  background: rgba(16, 185, 129, 0.35);
 }
 
 .phone-mockup {

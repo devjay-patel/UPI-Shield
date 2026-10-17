@@ -30,7 +30,6 @@ export default function TopHeader({
               {t.appTitle}
               <span className="team-badge">{t.teamName}</span>
             </h1>
-            <p className="tagline">{t.tagline} • {t.event}</p>
           </div>
         </div>
 

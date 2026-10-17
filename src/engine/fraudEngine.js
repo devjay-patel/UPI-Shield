@@ -341,6 +341,21 @@ export function evaluateRecipientAndPayment({
     highestWeight = Math.max(highestWeight, GROUP_F_RULES.UNKNOWN_COLLECT.points);
   }
 
+  // 6. Invalid / Malformed UPI ID (VPA) format & Bank Handle Check
+  if (upiId && upiId.trim()) {
+    const handleCheck = validateUpiHandle(upiId);
+    if (!handleCheck.isValid) {
+      matches.push({
+        id: GROUP_F_RULES.INVALID_VPA_FORMAT.id,
+        label: GROUP_F_RULES.INVALID_VPA_FORMAT.label,
+        explanation: GROUP_F_RULES.INVALID_VPA_FORMAT.explanation,
+        points: GROUP_F_RULES.INVALID_VPA_FORMAT.points,
+        evidence: `Malformed UPI ID: '${upiId}' (${handleCheck.message})`
+      });
+      highestWeight = Math.max(highestWeight, GROUP_F_RULES.INVALID_VPA_FORMAT.points);
+    }
+  }
+
   return {
     matches,
     groupScore: Math.min(highestWeight, GROUP_CAPS.GROUP_F)
@@ -348,26 +363,94 @@ export function evaluateRecipientAndPayment({
 }
 
 /**
- * Registers all matches of one group. Every match is shown to the user as a
- * sign, but the group score uses only the highest-weight match (counted once).
+ * Detailed NPCI UPI VPA format validator.
+ * Validates the username before '@' and the bank handle after '@'.
+ * UPI VPA standard: <username>@<bankhandle>
+ * - Username: letters, digits, dots, hyphens, underscores (no spaces)
+ * - Bank handle: 2-20 characters without dots (no .com / .in domain names)
  */
-function registerGroup(signals, groupScores, groupKey, matches, cap) {
-  if (!matches.length) return;
-  const best = matches.reduce((max, cur) => (cur.points > max.points ? cur : max));
-  groupScores[groupKey] = Math.min(best.points, cap);
-  matches.forEach(m => signals.push({ ...m, group: groupKey, counted: m === best }));
+export function validateUpiHandle(upiId) {
+  if (!upiId || typeof upiId !== 'string') return { isValid: true, message: '' };
+  const trimmed = upiId.trim();
+  if (!trimmed) return { isValid: true, message: '' };
+
+  if (!trimmed.includes('@')) {
+    return {
+      isValid: false,
+      reason: 'missing_at',
+      message: "Missing '@' symbol. Expected format: username@bankhandle (e.g. name@okaxis)"
+    };
+  }
+
+  const parts = trimmed.split('@');
+  if (parts.length > 2) {
+    return {
+      isValid: false,
+      reason: 'multiple_at',
+      message: "Multiple '@' symbols detected. A UPI ID can only contain one '@'"
+    };
+  }
+
+  const [username, handle] = parts;
+
+  if (!username) {
+    return {
+      isValid: false,
+      reason: 'empty_username',
+      message: "Missing username before '@' (e.g. 9876543210 or name)"
+    };
+  }
+
+  if (/\s/.test(username) || !/^[a-zA-Z0-9._-]+$/.test(username)) {
+    return {
+      isValid: false,
+      reason: 'invalid_username',
+      message: "Username before '@' contains spaces or unsupported symbols"
+    };
+  }
+
+  if (!handle) {
+    return {
+      isValid: false,
+      reason: 'empty_handle',
+      message: "Missing bank handle after '@' (e.g. @okaxis, @okhdfcbank, @oksbi, @paytm)"
+    };
+  }
+
+  if (handle.includes('.')) {
+    return {
+      isValid: false,
+      reason: 'email_domain',
+      message: "Invalid bank handle after '@'. Looks like an email domain (.com/.in). UPI handles do not contain dots"
+    };
+  }
+
+  if (/\s/.test(handle)) {
+    return {
+      isValid: false,
+      reason: 'space_in_handle',
+      message: "Bank handle after '@' cannot contain spaces"
+    };
+  }
+
+  if (!/^[a-zA-Z0-9]{2,20}$/.test(handle)) {
+    return {
+      isValid: false,
+      reason: 'invalid_handle_chars',
+      message: "Invalid bank handle after '@'. Must be 2-20 characters without dots or symbols"
+    };
+  }
+
+  return { isValid: true, message: 'Valid UPI ID & bank handle' };
 }
 
-// Plain-language text for each link finding
-const LINK_SIGNAL_INFO = {
-  HTTP_INSECURE: ['Link uses http instead of https', 'An http link is not encrypted. This is a warning sign, not proof.'],
-  URL_SHORTENER: ['Link is shortened', 'Shortened links hide the real website address, so you cannot see where they lead.'],
-  IP_ADDRESS_HOST: ['Link uses a number address instead of a name', 'Real services usually use a normal website name, not a bare number address.'],
-  SUSPICIOUS_DOMAIN_WORD: ['Link name contains words like kyc, verify or refund', 'Scam links often copy words that sound official.'],
-  SUSPICIOUS_TLD: ['Link ends with an unusual domain ending', 'Some endings such as .xyz or .top are often used in throwaway links.'],
-  LINK_WITH_SECRET_REQUEST: ['Link comes with a request to verify or share details', 'A link plus a request for PIN, OTP or verification is a common trick.'],
-  MALFORMED_URL: ['Link looks broken or oddly written', 'Odd link formatting can be used to confuse readers.']
-};
+/**
+ * Validates whether a UPI ID (Virtual Payment Address) conforms to standard NPCI format.
+ * Format: username@bankhandle (e.g. name@okaxis, 9876543210@paytm)
+ */
+export function isValidUpiIdFormat(upiId) {
+  return validateUpiHandle(upiId).isValid;
+}
 
 /**
  * Main Detection Engine Function
@@ -451,7 +534,14 @@ export function analyzePaymentRequest(input = {}) {
       }
     }
 
-    registerGroup(signals, groupScores, 'GROUP_A', groupAMatches, GROUP_CAPS.GROUP_A);
+    if (groupAMatches.length > 0) {
+      // Pick highest weight inside group A for score
+      const bestA = groupAMatches.reduce((max, cur) => cur.points > max.points ? cur : max);
+      groupScores.GROUP_A = Math.min(bestA.points, GROUP_CAPS.GROUP_A);
+      groupAMatches.forEach(m => {
+        if (!signals.some(s => s.id === m.id)) signals.push(m);
+      });
+    }
 
     // GROUP B: Money Trick
     let groupBMatches = [];
@@ -503,7 +593,13 @@ export function analyzePaymentRequest(input = {}) {
       }
     }
 
-    registerGroup(signals, groupScores, 'GROUP_B', groupBMatches, GROUP_CAPS.GROUP_B);
+    if (groupBMatches.length > 0) {
+      const bestB = groupBMatches.reduce((max, cur) => cur.points > max.points ? cur : max);
+      groupScores.GROUP_B = Math.min(bestB.points, GROUP_CAPS.GROUP_B);
+      groupBMatches.forEach(m => {
+        if (!signals.some(s => s.id === m.id)) signals.push(m);
+      });
+    }
   }
 
   // GROUP C: Urgency / Threat
@@ -528,7 +624,6 @@ export function analyzePaymentRequest(input = {}) {
       signals.push({
         id: 'C_URGENCY_THREAT',
         group: 'GROUP_C',
-        counted: true,
         label: hasMultipleOrThreat
           ? 'Severe urgency or threat language detected'
           : 'High urgency wording detected',
@@ -547,27 +642,29 @@ export function analyzePaymentRequest(input = {}) {
   const candidateLinks = [explicitLink, ...embeddedLinks].filter(Boolean);
 
   if (candidateLinks.length > 0 && !isPureEducational) {
-    const seenRules = new Set();
-    const linkMatches = [];
+    let bestLinkWeight = 0;
+    let linkEvidences = [];
 
     for (const urlStr of candidateLinks) {
       const result = analyzeLink(urlStr, normalized);
-      if (!result) continue;
-      for (const f of result.findings) {
-        if (seenRules.has(f.rule)) continue;
-        seenRules.add(f.rule);
-        const info = LINK_SIGNAL_INFO[f.rule] || ['Link warning sign', 'This link has a warning sign.'];
-        linkMatches.push({
-          id: 'D_' + f.rule,
-          label: info[0],
-          points: f.weight,
-          explanation: info[1],
-          evidence: f.evidence
-        });
+      if (result) {
+        bestLinkWeight = Math.max(bestLinkWeight, result.highestWeight);
+        linkEvidences.push(...result.findings.map(f => f.evidence));
       }
     }
 
-    registerGroup(signals, groupScores, 'GROUP_D', linkMatches, GROUP_CAPS.GROUP_D);
+    if (bestLinkWeight > 0) {
+      groupScores.GROUP_D = Math.min(bestLinkWeight, GROUP_CAPS.GROUP_D);
+      signals.push({
+        id: 'D_LINK_RISK',
+        group: 'GROUP_D',
+        label: 'Suspicious or unverified link characteristics',
+        points: groupScores.GROUP_D,
+        explanation:
+          'The link contains risk markers such as URL shorteners, insecure HTTP, raw IP addresses, or lookalike domain patterns.',
+        evidence: linkEvidences.slice(0, 3).join('; ')
+      });
+    }
   }
 
   // GROUP E: Impersonation
@@ -591,7 +688,13 @@ export function analyzePaymentRequest(input = {}) {
       }
     }
 
-    registerGroup(signals, groupScores, 'GROUP_E', groupEMatches, GROUP_CAPS.GROUP_E);
+    if (groupEMatches.length > 0) {
+      const bestE = groupEMatches.reduce((max, cur) => cur.points > max.points ? cur : max);
+      groupScores.GROUP_E = Math.min(bestE.points, GROUP_CAPS.GROUP_E);
+      groupEMatches.forEach(m => {
+        if (!signals.some(s => s.id === m.id)) signals.push(m);
+      });
+    }
   }
 
   // GROUP F: Recipient and Payment Verification
@@ -605,7 +708,15 @@ export function analyzePaymentRequest(input = {}) {
   });
 
   if (recipientCheck.matches.length > 0 && !isPureEducational) {
-    registerGroup(signals, groupScores, 'GROUP_F', recipientCheck.matches, GROUP_CAPS.GROUP_F);
+    groupScores.GROUP_F = recipientCheck.groupScore;
+    recipientCheck.matches.forEach(m => {
+      if (!signals.some(s => s.id === m.id)) {
+        signals.push({
+          ...m,
+          group: 'GROUP_F'
+        });
+      }
+    });
   }
 
   // STEP 4: Combination Bonus

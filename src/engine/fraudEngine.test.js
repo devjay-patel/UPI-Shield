@@ -3,7 +3,9 @@ import {
   analyzePaymentRequest,
   parseUpiQrPayload,
   detectAndMaskSecrets,
-  normalizeText
+  normalizeText,
+  isValidUpiIdFormat,
+  validateUpiHandle
 } from './fraudEngine.js';
 import { SAMPLE_CASES } from '../data/sampleCases.js';
 
@@ -193,6 +195,30 @@ describe('UPI Shield Fraud Detection Engine - Comprehensive Vitest Suite', () =>
 
     it('never calls window.localStorage or makes network requests', () => {
       expect(typeof window).toBe('undefined'); // In pure Node/Vitest environment
+    });
+
+    it('correctly validates UPI ID formats and flags malformed handles', () => {
+      expect(isValidUpiIdFormat('ramesh.store@okbank')).toBe(true);
+      expect(isValidUpiIdFormat('9876543210@paytm')).toBe(true);
+      expect(isValidUpiIdFormat('user@okhdfcbank')).toBe(true);
+      expect(isValidUpiIdFormat('invalidformat')).toBe(false);
+      expect(isValidUpiIdFormat('user@@bank')).toBe(false);
+      expect(isValidUpiIdFormat('user@')).toBe(false);
+      expect(isValidUpiIdFormat('user name@bank')).toBe(false);
+      expect(isValidUpiIdFormat('user@gmail.com')).toBe(false);
+      expect(isValidUpiIdFormat('user@ok axis')).toBe(false);
+
+      const emailCheck = validateUpiHandle('test.user@gmail.com');
+      expect(emailCheck.isValid).toBe(false);
+      expect(emailCheck.reason).toBe('email_domain');
+
+      const res = analyzePaymentRequest({
+        recipientName: 'Unknown Store',
+        upiId: 'bad_upi_no_at_symbol',
+        amount: '100'
+      });
+      const hasInvalidVpaSignal = res.signals.some(s => s.id === 'F_INVALID_VPA_FORMAT');
+      expect(hasInvalidVpaSignal).toBe(true);
     });
   });
 });
